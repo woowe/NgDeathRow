@@ -1,14 +1,8 @@
+
 p {
-  width: 100vw;
-  height: 100vh;
+  margin: 0;
+  padding: 0;
 
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
+  max-width: 95vw;
   text-align: center;
-
-  font-size: calc(4rem + 1vw);
-
-  padding: 48px;
 }

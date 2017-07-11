@@ -5,11 +5,13 @@ import { AppComponent } from './app.component';
 import { MessageComponent } from './message/message.component';
 
 import { DeathRowDatasetService } from './services/death-row-dataset.service';
+import { ThreeSceneComponent } from './three-scene/three-scene.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    MessageComponent
+    MessageComponent,
+    ThreeSceneComponent
   ],
   imports: [
     BrowserModule

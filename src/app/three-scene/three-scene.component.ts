@@ -2,6 +2,7 @@ import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, NgZone, HostLi
 
 
 import * as THREE from 'three';
+import { Noise } from 'noisejs';
 
 @Component({
   selector: 'app-three-scene',
@@ -18,13 +19,25 @@ export class ThreeSceneComponent implements OnInit, AfterViewInit {
 
   meshes: any = {};
 
+  cols = 125;
+  rows = 125;
+  spacing = 5;
+
+  noise: any;
+  tick = 0;
+
   constructor(private _zone: NgZone) {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x222222);
+    this.scene.fog = new THREE.FogExp2( 0x000000, 0.0007 );
 
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    this.camera.position.set(20, 40, 50);
+    this.camera.lookAt(this.scene.position);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
+
+    this.noise = new Noise(Math.random());
   }
 
   ngOnInit() {
@@ -33,27 +46,67 @@ export class ThreeSceneComponent implements OnInit, AfterViewInit {
   ngAfterViewInit() {
     const el = this.threeScene.nativeElement;
 
+    this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
 
     el.appendChild(this.renderer.domElement);
 
 
     let geometry = new THREE.Geometry();
+    let material = new THREE.PointsMaterial({color: 0xffffff});
 
-    geometry.vertices.push(
-    	new THREE.Vector3( -10,  10, 10 ),
-    	new THREE.Vector3( -10, -10, 0 ),
-    	new THREE.Vector3(  10, -10, 0 )
-    );
+    // const size = 36, step = 4;
 
-    geometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
+    // for (let i = -size; i <= size; i += step) {
+    //   geometry.vertices.push(new THREE.Vector3(-size, 0, i));
+    //   geometry.vertices.push(new THREE.Vector3(size, 0, i));
+
+    //   geometry.vertices.push(new THREE.Vector3(i, 0, -size));
+    //   geometry.vertices.push(new THREE.Vector3(i, 0, size));
+    // }
+
+    // const line = new THREE.Line(geometry, material, THREE.LinePieces);
+    // this.scene.add(line);
 
 
-    const mesh_material = new THREE.MeshBasicMaterial({ color: 0xff22ff, wireframe: true });
-    this.meshes['terrian'] = new THREE.Mesh( geometry, mesh_material );
-    this.meshes['terrian'].drawMode = THREE.TriangleStripDrawMode;
+    const offset_x = this.cols * this.spacing / 4;
+    const offset_z = this.rows * this.spacing / 4;
 
-    this.scene.add( this.meshes['terrian'] );
+    let z = 0;
+    for (let y = 0; y < this.rows; ++y) {
+      for (let x = 0; x < this.cols; ++x) {
+        const val = this.noise.perlin3(x / 10, y / 10, z / 10) * 25;
+        geometry.vertices.push(new THREE.Vector3(x * -this.spacing + offset_x, val, y * -this.spacing + offset_z));
+      }
+    }
+
+    this.meshes['points'] = new THREE.Points( geometry, material)
+
+
+    this.scene.add(this.meshes['points']);
+
+    // geometry.vertices.push(
+    //     new THREE.Vector3( 0,  0, 0 ),
+    //     new THREE.Vector3( 10, 0, 0),
+    //     new THREE.Vector3( 10, -10, 0),
+    // );
+
+    // geometry.vertices.push(
+    //   new THREE.Vector3( 0, 0, 0),
+    //   new THREE.Vector3( 10, -10, 0),
+    //   new THREE.Vector3( 0, -10, 0),
+    // )
+
+    // geometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
+
+    // geometry.computeFaceNormals();
+    // geometry.computeVertexNormals();
+
+    // const mesh_material = new THREE.MeshBasicMaterial({ color: 0xff22ff, wireframe: true });
+    // this.meshes['terrian'] = new THREE.Mesh( geometry, mesh_material );
+    // this.meshes['terrian'].drawMode = THREE.TriangleStripDrawMode;
+
+    // this.scene.add( this.meshes['terrian'] );
 
     const pointLight = new THREE.PointLight( 0xffffff, 1, 1000 );
     pointLight.position.set(2, 2, 5);
@@ -70,12 +123,20 @@ export class ThreeSceneComponent implements OnInit, AfterViewInit {
 
   animate() {
 
-    // this.camera.position.z = Math.abs(Math.cos(performance.now() / 1000)) * 350 + 2.5;
 
-    // this.meshes.cube.rotation.x += 0.01;
-    // this.meshes.cube.rotation.y += 0.01;
+    for (let y = 0; y < this.rows; ++y) {
+      for (let x = 0; x < this.cols; ++x) {
+        const idx = y * this.cols + x;
+        const val = this.noise.perlin3(x / 10, y / 10, (this.tick - x) / 1000) * 25;
+        this.meshes.points.geometry.vertices[idx].y = val;
+      }
+    }
+
+    this.meshes.points.geometry.verticesNeedUpdate = true;
 
     this.renderer.render(this.scene, this.camera);
+
+    ++this.tick;
 
     window.requestAnimationFrame(() => { this.animate(); });
   }
